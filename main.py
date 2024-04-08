@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
+import json
 import random
 
 
@@ -37,11 +38,34 @@ def gen_password():
     pass_entry.insert(0, password)
 
 
+# ---------------------------- SEARCH PASSWORD -----------------------------#
+def search_db():
+    thing_to_search = web_entry.get().lower()
+    try:
+        with open('data.json', mode='r') as file:
+            data = json.load(file)
+            focus = data[thing_to_search]
+            messagebox.showinfo(title='Password Found', message=f"Your email/username is {focus['email']}.\n"
+                                f"Your password is {focus['password']}")
+    except FileNotFoundError:
+        messagebox.showerror(title='File Not Found', message='The file you requested to be searched was not found.')
+    except KeyError:
+        messagebox.showerror(title='Website Not Found', message='The website or location you have requested does not '
+                                                                'exist in our database. You can try again without the '
+                                                                '.com suffix')
+
+
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save_pass():
     website = web_entry.get()
     user_name = email_entry.get()
     pass_word = pass_entry.get()
+    new_data = {
+        website: {
+            'email': user_name,
+            'password': pass_word
+        }
+    }
 
     if len(website) == 0 or len(pass_word) == 0:
         messagebox.showerror(title="Missing website or password", message="You did not enter a website or a password. "
@@ -52,11 +76,18 @@ def save_pass():
                                                f'Password: {pass_word}\n'
                                                f'Do you want to save?')
         if is_ok:
-            with open('my_passwords.txt', mode='a') as file:
-                formatted_string = f'{website} | {user_name} | {pass_word}\n'
-                file.write(formatted_string)
-                web_entry.delete(0, END)
-                pass_entry.delete(0, END)
+            try:
+                with open('data.json', mode='r') as file:
+                    data = json.load(file)
+                    data.update(new_data)
+                with open('data.json', mode='w') as file:
+                    json.dump(data, file, indent=4)
+            except FileNotFoundError:
+                with open('data.json', mode='w') as file:
+                    json.dump(new_data, file, indent=4)
+
+            web_entry.delete(0, END)
+            pass_entry.delete(0, END)
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -77,11 +108,12 @@ password = Label(text='Password:')
 # Button Creation
 gen_pass = Button(text='Generate Password', command=gen_password)
 add = Button(text='Add', width=36, command=save_pass)
+search = Button(text='Search', width=13, command=search_db)
 
 # Entry Creations
-web_entry = Entry(width=35)
+web_entry = Entry(width=20)
 web_entry.focus()
-email_entry = Entry(width=35)
+email_entry = Entry(width=38)
 pass_entry = Entry(width=21)
 
 # Layouts
@@ -89,11 +121,12 @@ web.grid(row=1, column=0)
 username.grid(row=2, column=0)
 password.grid(row=3, column=0)
 
-web_entry.grid(row=1, column=1, columnspan=2)
+web_entry.grid(row=1, column=1, columnspan=1)
 email_entry.grid(row=2, column=1, columnspan=2)
 pass_entry.grid(row=3, column=1)
 
 gen_pass.grid(row=3, column=2)
 add.grid(row=4, column=1, columnspan=2)
+search.grid(row=1, column=2)
 
 window.mainloop()
